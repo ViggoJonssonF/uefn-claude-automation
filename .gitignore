@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+playtest-history/
+*.png
+report.json
