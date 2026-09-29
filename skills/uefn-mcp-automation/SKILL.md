@@ -80,6 +80,41 @@ Test players (Island Settings › Debug › Test Players on Start, up to 98) are
 `player`s — invisible to `GetPlayers()` and to player-keyed save data. Useful only for code that
 works on agents.
 
+## Building Scene Graph content and prefabs (verified on UEFN 42.00)
+
+- Entities/components: `EntityToolset` — plain entity class `/EntityFramework/_Verse/VNI/Entity.entity`;
+  a mesh component is the mesh asset's own class (`/<Project>/_Verse/Assets.<Folder>-<Mesh>`);
+  your Verse components and their enum properties (`"MyEnumValue"`) are set by friendly name.
+  `CreateEntity` with `parentEntity` treats the transform as **relative** (the docs say world) —
+  correct it with `SetEntityTransform`, which is world.
+- New prefab asset (8765 Python): `unreal.get_editor_subsystem(unreal.SceneGraphScriptSubsystem)`
+  → `create_empty_prefab(name, "/Project/Folder/Name")` (the second argument is the FULL package
+  name, not a folder) → `create_prefab_from_entities([sub.find_entity(level, "ShortName")], prefab)`
+  with `level = LevelEditorSubsystem.get_current_level()`. New instances via `CreateEntity(<prefab>_C)`
+  carry every component and value.
+- Change **properties** inside an existing prefab: edit the template object
+  `/Pkg.Default__X_C:<Entity>.<Component>_0` in Python — real field name via
+  `SceneGraphScriptSubsystem.get_real_property_name(cls, "FriendlyName")`, then `modify()`,
+  `set_editor_property`, `BlueprintEditorLibrary.compile_blueprint`, save. Propagates to existing
+  and new instances. (Epic's EntityToolset refuses archetype objects by design.)
+- Change **structure** inside an existing prefab: not possible this way — a component added to the
+  template vanishes on compile and triggers an EntityFramework ensure. Instead add entities as
+  children of the prefab *instance* in the level, or spawn a small prefab from Verse at runtime.
+
+## MVVM event parameters (Param0) — scriptable
+
+A parameterised event binding (button `OnClicked` → `MyEvent : event(tuple(int))`) stores its literal
+in `SavedPins`, which is read-only to scripts. The value can still be set through the event's
+generated wrapper graph:
+1. Open the widget (`EditorAppToolset.OpenEditorForAsset`) so its MVVM wrapper graphs exist.
+2. `view = find_object("<WBP>.<WBP>:MVVMWidgetBlueprintExtension_View_0.MVVMBlueprintView_0")`;
+   for each event: `event_path.export_text()` names the widget, `get_editor_property('graph_name')`
+   names its graph.
+3. `unreal.BlueprintGraphEditor.get_graph_editor(find_object("<WBP>.<WBP>:<graph_name>")).list_all_nodes()`
+   → the `K2Node_CallFunction` → `list_all_pins()` → pin `Param0` → `set_pin_value("N")`.
+4. `BlueprintEditorLibrary.compile_blueprint(wbp)` — this rewrites `SavedPins` — then save.
+Read/audit without writing: `event.get_editor_property('saved_pins')[0].export_text()` → `DefaultString="N"`.
+
 ## Seeing the result
 
 - `EditorAppToolset.CaptureViewport` — PNG of the level viewport; with `annotations` it draws a
@@ -103,6 +138,9 @@ background (MCP calls crawl otherwise); it lasts until the editor restarts:
 - **Synthetic keyboard/mouse input into the Fortnite client.** EasyAntiCheat runs in Creative/UEFN
   sessions and bans are account- and hardware-level. Drive the game from Verse instead.
 - **Asset reload** through MCP — known to hang UEFN.
+- **Deleting a prefab or any asset that generates Verse types, then compiling Verse in the same
+  editor session** — verified crash (access violation right after a successful compile, during type
+  regeneration). Delete such assets last, then restart UEFN before the next build.
 - Anything in your own project notes marked as a crash mode (e.g. material recompile after certain
   graph edits, byte-patching nested widget event bindings, saving very large prefabs).
 - Clicking UMG buttons: whether a button's click reaches its Verse event can't be tested from

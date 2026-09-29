@@ -11,15 +11,20 @@ $ErrorActionPreference = "Stop"
 $Repo = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Claude = Join-Path $env:USERPROFILE ".claude"
 
-$SkillDest = Join-Path $Claude "skills\uefn-mcp-automation"
 $ToolsDest = Join-Path $Claude "uefn-tools"
-New-Item -ItemType Directory -Force -Path $SkillDest, $ToolsDest | Out-Null
+$AgentsDest = Join-Path $Claude "agents"
+New-Item -ItemType Directory -Force -Path $ToolsDest, $AgentsDest | Out-Null
 
-Copy-Item -Force (Join-Path $Repo "skills\uefn-mcp-automation\SKILL.md") $SkillDest
+foreach ($Skill in @("uefn-mcp-automation", "uefn-gauntlet")) {
+    $Dest = Join-Path $Claude "skills\$Skill"
+    New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+    Copy-Item -Force (Join-Path $Repo "skills\$Skill\SKILL.md") $Dest
+    Write-Host "Installed skill  -> $Dest"
+}
 Copy-Item -Force (Join-Path $Repo "tools\*") $ToolsDest
-
-Write-Host "Installed skill -> $SkillDest"
-Write-Host "Installed tools -> $ToolsDest"
+Copy-Item -Force (Join-Path $Repo "agents\*.md") $AgentsDest
+Write-Host "Installed tools  -> $ToolsDest"
+Write-Host "Installed agents -> $AgentsDest (uefn-*.md)"
 
 $Python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $Python) {
@@ -32,3 +37,4 @@ if (-not $Python) {
 }
 Write-Host ""
 Write-Host "Next: copy verse\AutoTest.verse into your project and start it from a device (see README)."
+Write-Host "Optional: add the gauntlet TaskCompleted hook to your project's .claude\settings.json (see README)."

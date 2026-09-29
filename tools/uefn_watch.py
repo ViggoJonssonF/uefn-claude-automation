@@ -89,7 +89,15 @@ def newest_crash():
     if not dirs:
         return None
     d = max(dirs, key=os.path.getmtime)
-    return {"path": d, "mtime": os.path.getmtime(d)}
+    info = {"path": d, "mtime": os.path.getmtime(d), "ensure": False, "message": ""}
+    ctx = os.path.join(d, "CrashContext.runtime-xml")
+    if os.path.exists(ctx):
+        text = open(ctx, encoding="utf-8", errors="replace").read()
+        info["ensure"] = "<IsEnsure>true" in text
+        start = text.find("<ErrorMessage>")
+        if start >= 0:
+            info["message"] = text[start + 14:text.find("</ErrorMessage>", start)][:200]
+    return info
 
 
 def main():
@@ -120,8 +128,12 @@ def main():
         else:
             report["status"] = "ok"
         if crash and started and crash["mtime"] > started:
-            report["status"] += " (a crash report is newer than this process)"
-            code = code or 4
+            if crash["ensure"]:
+                # Non-fatal engine ensure while this editor kept running - worth reading, not an outage.
+                report["status"] += " (an ENSURE was reported during this editor session)"
+            else:
+                report["status"] += " (a crash report is newer than this process)"
+                code = code or 4
     report["newest_crash"] = crash
 
     if args.json:
@@ -133,7 +145,10 @@ def main():
         for name, ok in report.get("ports", {}).items():
             print(f"  port {name}: {'open' if ok else 'CLOSED'}")
         if crash:
-            print(f"  newest crash dir: {crash['path']} ({time.ctime(crash['mtime'])})")
+            kind = "ensure" if crash["ensure"] else "crash"
+            print(f"  newest {kind} report: {crash['path']} ({time.ctime(crash['mtime'])})")
+            if crash["message"]:
+                print(f"    {crash['message']}")
     return code
 
 

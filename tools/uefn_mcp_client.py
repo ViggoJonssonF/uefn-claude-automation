@@ -68,10 +68,23 @@ class UefnMcp:
                                      "clientInfo": {"name": "uefn-tools", "version": "1.0"}})
         self._post({"jsonrpc": "2.0", "method": "notifications/initialized"}, expect_reply=False)
 
+    def call_raw(self, toolset, tool, arguments=None):
+        """Call a toolset tool and return the raw MCP result (text AND image content blocks)."""
+        return self._request("tools/call", {"name": "call_tool", "arguments": {
+            "toolset_name": toolset, "tool_name": tool, "arguments": arguments or {}}})
+
+    def call_image(self, toolset, tool, arguments=None):
+        """Call a tool that returns an image (e.g. CaptureViewport). Returns PNG bytes or None."""
+        import base64
+        result = self.call_raw(toolset, tool, arguments) or {}
+        for c in result.get("content", []):
+            if c.get("type") == "image" and c.get("data"):
+                return base64.b64decode(c["data"])
+        return None
+
     def call(self, toolset, tool, arguments=None):
         """Call a toolset tool. Returns the decoded JSON result; raises McpError on tool errors."""
-        result = self._request("tools/call", {"name": "call_tool", "arguments": {
-            "toolset_name": toolset, "tool_name": tool, "arguments": arguments or {}}})
+        result = self.call_raw(toolset, tool, arguments)
         text = "".join(c.get("text", "") for c in (result or {}).get("content", [])
                        if c.get("type") == "text")
         if (result or {}).get("isError"):

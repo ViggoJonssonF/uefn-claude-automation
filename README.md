@@ -23,11 +23,46 @@ One run ≈ 3–6 minutes. Example output:
 [17:56:37]   END passed=8 failed=1
 ```
 
+## The gauntlet: a team of agents that checks each other
+
+For bigger features ("build a shop with three tabs"), the `uefn-gauntlet` skill turns the main
+Claude session into a **director** that plans and dispatches but never implements or grades:
+
+```
+SPEC (acceptance criteria + visual "bars", one question round with you)
+  → builders:  uefn-verse-builder · uefn-ui-builder · uefn-level-builder   (one owner per file/asset,
+                                                                            editor lock for mutations)
+  → uefn-test-author writes AutoTests from the SPEC, not from the code
+  → gauntlet per task:
+       1. gate (a script, not an agent): health · Verse compile · playtest · screenshots  → evidence
+       2. uefn-spec-reviewer   (criterion by criterion, evidence or FAIL)
+       3. uefn-visual-critic   (blind A/B pick against the bar, no scores)
+       4. uefn-skeptic         (tries to break it: multiplayer, rejoin, edge cases, crash modes)
+  → FAIL → fix loop (same builder ×3, fresh builder ×2, then a written ruling) → re-gate → re-review
+```
+
+`tools/gauntlet.py` keeps the state in `<project>/.gauntlet/<run>/` (SPEC, tasks, evidence, reviews,
+ledger) and enforces the rules: the owner of a task can never review it, a PASS needs gate evidence,
+and a review older than the latest evidence no longer counts. Wire it to Claude Code's task list so a
+task literally cannot be closed without passing:
+
+```json
+{ "hooks": { "TaskCompleted": [ { "hooks": [ { "type": "command",
+  "command": "py -3 \"C:/Users/<you>/.claude/uefn-tools/gauntlet.py\" check", "timeout": 30 } ] } ] } }
+```
+
+Only task subjects that start with `[G:<id>]` are gated; everything else passes through untouched.
+The agents preload `uefn-mcp-automation`; add your own specialist skills (Verse, UI conventions,
+lighting…) to their `skills:` lists.
+
 ## What's in here
 
 | Path | What |
 |---|---|
-| `skills/uefn-mcp-automation/SKILL.md` | The Claude Code skill: which channel to use for what, the playtest loop, how to write scenarios, visual checks, what never to automate. |
+| `skills/uefn-mcp-automation/SKILL.md` | The Claude Code skill: which channel to use for what, the playtest loop, how to write scenarios, building entities/prefabs, MVVM Param0, visual checks, what never to automate. |
+| `skills/uefn-gauntlet/SKILL.md` | Director protocol for the multi-agent gauntlet. |
+| `agents/uefn-*.md` | The seven subagents: three builders, a test author, three reviewers. |
+| `tools/gauntlet.py` | Gauntlet state, deterministic gate, verdicts, ledger, editor lock, TaskCompleted hook. |
 | `tools/uefn_playtest.py` | The unattended playtest runner (flag on → compile → session → collect `AUTOTEST:` lines → screenshot → teardown → flag off). |
 | `tools/uefn_mcp_client.py` | Tiny dependency-free client for Epic's MCP at `127.0.0.1:8000/mcp`, so scripts can call toolsets without an agent. |
 | `tools/uefn_watch.py` | Editor health check: process alive, modal dialog blocking the game thread, fresh crash reports, which ports are up. |
