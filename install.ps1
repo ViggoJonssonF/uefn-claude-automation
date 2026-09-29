@@ -15,7 +15,7 @@ $ToolsDest = Join-Path $Claude "uefn-tools"
 $AgentsDest = Join-Path $Claude "agents"
 New-Item -ItemType Directory -Force -Path $ToolsDest, $AgentsDest | Out-Null
 
-foreach ($Skill in @("uefn-mcp-automation", "uefn-gauntlet")) {
+foreach ($Skill in @("uefn-mcp-automation", "uefn-gauntlet", "uefn-blender-assets")) {
     $Dest = Join-Path $Claude "skills\$Skill"
     New-Item -ItemType Directory -Force -Path $Dest | Out-Null
     Copy-Item -Force (Join-Path $Repo "skills\$Skill\SKILL.md") $Dest

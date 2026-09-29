@@ -55,13 +55,36 @@ Only task subjects that start with `[G:<id>]` are gated; everything else passes 
 The agents preload `uefn-mcp-automation`; add your own specialist skills (Verse, UI conventions,
 lighting…) to their `skills:` lists.
 
+## Using your Codex usage too (and new 3D assets)
+
+`tools/codex_delegate.py` hands a brief to a Codex agent (e.g. `gpt-6-astra`) through
+`codex exec`, so token-heavy work runs on your ChatGPT/Codex plan while Claude directs and verifies:
+
+```
+py -3 codex_delegate.py --task T5 --brief brief.md [--model gpt-6-astra] [--max-steps 120] [--asset-job]
+```
+
+It logs prompt, events, final message and usage under `.gauntlet/<run>/codex/<task>/`, and has two
+brakes: `--max-steps` kills Codex live after N tool calls, `--max-tokens` checks the usage Codex
+reports at the end of each turn. New Blender meshes are the most expensive thing in the workflow,
+so `--asset-job` refuses to run unless the user approved assets for this run
+(`gauntlet.py assets approve --count N --max-tokens T --max-steps S`). The `uefn-asset-builder`
+agent writes the brief, delegates the modelling to Codex (which drives Blender through the
+[Blender MCP bridge](https://github.com/djeada/blender-mcp-server)), and verifies the result in UEFN;
+`uefn-blender-assets` holds the proven Blender → FBX (cm) → UEFN conventions.
+
+Note: if `codex exec` fails with "Error loading rules … starlark", your `~/.codex/rules/default.rules`
+has stray bytes (the desktop app tolerates them, the CLI doesn't) — back it up and clean it.
+
 ## What's in here
 
 | Path | What |
 |---|---|
 | `skills/uefn-mcp-automation/SKILL.md` | The Claude Code skill: which channel to use for what, the playtest loop, how to write scenarios, building entities/prefabs, MVVM Param0, visual checks, what never to automate. |
 | `skills/uefn-gauntlet/SKILL.md` | Director protocol for the multi-agent gauntlet. |
-| `agents/uefn-*.md` | The seven subagents: three builders, a test author, three reviewers. |
+| `skills/uefn-blender-assets/SKILL.md` | Blender → centimetre FBX → UEFN import/materials/LODs conventions, with the cost rule. |
+| `agents/uefn-*.md` | The eight subagents: four builders (incl. the Codex-backed asset builder), a test author, three reviewers. |
+| `tools/codex_delegate.py` | Delegate a brief to Codex (`codex exec`) with step/token caps and the asset-approval check. |
 | `tools/gauntlet.py` | Gauntlet state, deterministic gate, verdicts, ledger, editor lock, TaskCompleted hook. |
 | `tools/uefn_playtest.py` | The unattended playtest runner (flag on → compile → session → collect `AUTOTEST:` lines → screenshot → teardown → flag off). |
 | `tools/uefn_mcp_client.py` | Tiny dependency-free client for Epic's MCP at `127.0.0.1:8000/mcp`, so scripts can call toolsets without an agent. |

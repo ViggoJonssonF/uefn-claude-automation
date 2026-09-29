@@ -1,6 +1,6 @@
 ---
 name: uefn-gauntlet
-description: Director protocol for building a UEFN feature with a team of specialist agents whose work is always verified by others - spec with acceptance criteria and visual bars, task graph with one owner per file/asset, builder subagents (uefn-verse-builder, uefn-ui-builder, uefn-level-builder), an independent test author, and a gauntlet of deterministic gates (compile, playtest, screenshots via gauntlet.py) plus reviewers (uefn-spec-reviewer, uefn-visual-critic, uefn-skeptic) that must pass before a task may close. Use when the user asks to build a system, shop, UI, prefab setup or other multi-part feature in a UEFN project "for real", with little or no manual work on their side, or says "gauntlet". Not for one-line fixes.
+description: Director protocol for building a UEFN feature with a team of specialist agents whose work is always verified by others - spec with acceptance criteria and visual bars, task graph with one owner per file/asset, builder subagents (uefn-verse-builder, uefn-ui-builder, uefn-level-builder, and uefn-asset-builder for user-approved new meshes via Codex), an independent test author, and a gauntlet of deterministic gates (compile, playtest, screenshots via gauntlet.py) plus reviewers (uefn-spec-reviewer, uefn-visual-critic, uefn-skeptic) that must pass before a task may close. Use when the user asks to build a system, shop, UI, prefab setup or other multi-part feature in a UEFN project "for real", with little or no manual work on their side, or says "gauntlet". Not for one-line fixes.
 ---
 
 # UEFN Gauntlet — director protocol
@@ -43,6 +43,16 @@ interfaces from earlier tasks. Nothing else — no hints about how reviewers wil
   editor work; compiles are global, so integrate Verse builders one at a time.
 - Dispatch `uefn-test-author` from the SPEC in parallel with the builders.
 - Builder reports NEEDS_CONTEXT/BLOCKED → answer from the SPEC or ask the user; never guess.
+
+## New 3D assets and the Codex budget
+- **Never plan a new custom asset unless the user explicitly asked for one.** Default to existing
+  project/Fortnite assets or a placeholder primitive, and say so in the SPEC. If the user wants
+  new assets, ask how many and record `gauntlet.py assets approve --count N --max-tokens T --max-steps S`
+  only after they say yes. Then dispatch `uefn-asset-builder` (it delegates the modelling to Codex).
+- Any token-heavy task (not just assets) can run on the user's Codex usage instead of Claude's:
+  a builder writes a brief and runs `codex_delegate.py --task <id> --brief <file> [--max-steps N]`.
+  Codex output is still just a builder report — it goes through the same gate and reviewers.
+- Codex reports tokens only at the end of a turn; the step cap (`--max-steps`) is the live brake.
 
 ## Phase 4 — the gauntlet (per task, in this order)
 1. **Gate** (you run it, it's a script): `gauntlet.py gate T3 [--playtest] [--viewport x,y,z,pitch,yaw] [--client-shot]`.

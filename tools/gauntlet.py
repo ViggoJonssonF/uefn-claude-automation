@@ -22,6 +22,8 @@ Commands (run from anywhere inside the project, or pass --root):
   ruling "<what> -- <why> -- <cost if wrong>"
   status [T1]
   lock acquire <who> "<reason>" [--ttl 900] | lock release <who> | lock status
+  assets approve --count N --max-tokens T --note ".."   ONLY on the user's explicit instruction
+  assets status | assets revoke
   check                                            (TaskCompleted hook: reads hook JSON on stdin)
 
 Task subjects in Claude Code's task list must start with "[G:<id>]" for the hook to gate them.
@@ -310,6 +312,46 @@ def cmd_check(args, root):
     return 2
 
 
+# --- asset-creation approval (token-expensive Blender/Codex work) ------------------------------
+# New 3D assets cost millions of tokens. They are created ONLY after the user explicitly approves a
+# number of assets for the current run. `codex_delegate.py --asset-job` checks and consumes this.
+def approval_path(root):
+    run, rdir = current_run(root)
+    return os.path.join(rdir, "ASSET_APPROVAL.json")
+
+
+def consume_asset_approval(root, task_id, dry_run=True):
+    """(ok, why, approval). A job for a task that already used a slot may run again (fix rounds)."""
+    appr = read_json(approval_path(root))
+    if not appr:
+        return False, "no asset approval for this run - new assets need the user's explicit go", None
+    used = appr.setdefault("used", [])
+    if task_id not in used and len(used) >= appr["count"]:
+        return False, f"asset approval exhausted ({len(used)}/{appr['count']} used: {used})", appr
+    if not dry_run and task_id not in used:
+        used.append(task_id)
+        write_json(approval_path(root), appr)
+    return True, "ok", appr
+
+
+def cmd_assets(args, root):
+    path = approval_path(root)
+    if args.action == "approve":
+        appr = {"count": args.count, "max_tokens_per_job": args.max_tokens, "max_steps_per_job": args.max_steps,
+                "note": args.note,
+                "approved_at": now_iso(), "used": []}
+        write_json(path, appr)
+        print(f"approved {args.count} new asset job(s), caps {args.max_tokens} tokens / {args.max_steps} tool calls each: {args.note}")
+    elif args.action == "revoke":
+        if os.path.exists(path):
+            os.remove(path)
+        print("asset approval revoked")
+    else:
+        appr = read_json(path)
+        print(json.dumps(appr, indent=1) if appr else "no asset approval for this run")
+    return 0
+
+
 # --- editor lock -------------------------------------------------------------------------------
 def cmd_lock(args, root):
     path = os.path.join(gdir(root), "editor.lock")
@@ -360,6 +402,11 @@ def main():
     p.add_argument("who", nargs="?", default=""); p.add_argument("reason", nargs="?", default="")
     p.add_argument("--ttl", type=int, default=900)
     sub.add_parser("check")
+    p = sub.add_parser("assets", help="approve/revoke/status of token-expensive asset creation (user's call)")
+    p.add_argument("action", choices=["approve", "revoke", "status"])
+    p.add_argument("--count", type=int, default=1); p.add_argument("--max-tokens", type=int, default=3_000_000)
+    p.add_argument("--max-steps", type=int, default=120)
+    p.add_argument("--note", default="")
 
     args = ap.parse_args()
     if args.cmd == "check":
@@ -370,7 +417,8 @@ def main():
     else:
         root = find_root(args.root)
     handler = {"init": cmd_init, "task": cmd_task, "gate": cmd_gate, "verdict": cmd_verdict,
-               "ruling": cmd_ruling, "status": cmd_status, "check": cmd_check, "lock": cmd_lock}[args.cmd]
+               "ruling": cmd_ruling, "status": cmd_status, "check": cmd_check, "lock": cmd_lock,
+               "assets": cmd_assets}[args.cmd]
     return handler(args, root) or 0
 
 
