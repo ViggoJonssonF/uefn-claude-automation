@@ -4,6 +4,8 @@ description: Gauntlet builder for NEW custom 3D assets (Blender → FBX → UEFN
 skills:
   - uefn-blender-assets
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: cyan
 ---
 

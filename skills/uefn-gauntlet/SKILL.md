@@ -44,6 +44,27 @@ interfaces from earlier tasks. Nothing else — no hints about how reviewers wil
 - Dispatch `uefn-test-author` from the SPEC in parallel with the builders.
 - Builder reports NEEDS_CONTEXT/BLOCKED → answer from the SPEC or ask the user; never guess.
 
+## Model policy (user's choice, 2026-09-29)
+- **Director (you):** Opus 5.5, high effort — the main session's own setting.
+- **Every worker defaults to Opus 5.5 / high.** All `uefn-*` agent definitions pin
+  `model: claude-opus-5-5`, `effort: high`. **Reviewers always stay at Opus/high** — verification is
+  the point of the gauntlet, never economise there.
+- You MAY downgrade a *builder* when the task is small and well-specified. Pick the cheapest that
+  is clearly enough, and record it: `gauntlet.py task add … --model opus|sonnet --effort medium|low --why "<reason>"`
+  (a ruling is written automatically). How to dispatch each combination:
+
+  | Want | Agent to dispatch | Agent-tool `model` |
+  |---|---|---|
+  | Opus high (default) | the specialist (`uefn-verse-builder`, …) | — |
+  | Opus medium / low | `uefn-builder-medium` / `uefn-builder-low` (+ name the skill to load in the brief) | — |
+  | Sonnet high | the specialist | `sonnet` |
+  | Sonnet medium / low (tiny, mechanical) | `uefn-builder-medium` / `uefn-builder-low` | `sonnet` |
+
+  Guide: low = exact mechanical recipe; medium = routine change following an existing pattern;
+  high = anything new, cross-system, editor/asset mutations with crash risk, or unclear. If a
+  downgraded task fails review once, the fix round goes to the Opus/high specialist.
+- **New 3D assets in Blender:** Codex `gpt-6-astra` at high effort (`codex_delegate.py` defaults).
+
 ## New 3D assets and the Codex budget
 - **Never plan a new custom asset unless the user explicitly asked for one.** Default to existing
   project/Fortnite assets or a placeholder primitive, and say so in the SPEC. If the user wants

@@ -17,6 +17,7 @@ State lives in <project root>/.gauntlet/<run-id>/ :
 Commands (run from anywhere inside the project, or pass --root):
   init "<title>"                                   new run, becomes CURRENT
   task add T1 --title ".." --owner uefn-ui-builder --reviews spec,visual,skeptic --gates compile,playtest
+           [--model opus|sonnet|codex:gpt-6-astra] [--effort high] [--why "reason for a downgrade"]
   gate T1 [--playtest] [--viewport x,y,z,pitch,yaw] [--client-shot]
   verdict T1 --role spec --by uefn-spec-reviewer --pass|--fail --notes ".." [--evidence path ...]
   ruling "<what> -- <why> -- <cost if wrong>"
@@ -139,9 +140,12 @@ def cmd_task(args, root):
     if bad:
         raise SystemExit(f"gauntlet: unknown review/gate names: {bad} (reviews {sorted(REVIEW_ROLES)}, gates {sorted(GATES)})")
     task = {"id": args.id, "title": args.title, "owner": args.owner, "reviews": reviews,
-            "gates": gates, "created": now_iso(), "fix_round": 0}
+            "gates": gates, "created": now_iso(), "fix_round": 0,
+            "model": args.model, "effort": args.effort, "model_reason": args.why}
     write_json(os.path.join(rdir, "tasks", f"{args.id}.json"), task)
-    print(f"task {args.id} -> owner {args.owner}, gates {gates}, reviews {reviews}")
+    if (args.model, args.effort) != ("opus", "high"):
+        cmd_ruling(argparse.Namespace(text=f"{args.id} runs on {args.model}/{args.effort} instead of opus/high -- {args.why or 'no reason given'} -- redo on opus/high if reviews fail"), root)
+    print(f"task {args.id} -> owner {args.owner} ({args.model}/{args.effort}), gates {gates}, reviews {reviews}")
     print(f'Claude Code task subject must start with: [G:{args.id}]')
 
 
@@ -286,7 +290,7 @@ def cmd_status(args, root):
     for tid in ids:
         task = read_json(os.path.join(rdir, "tasks", f"{tid}.json"), {})
         done, problems = task_state(rdir, tid)
-        print(f"  {tid} [{'DONE' if done else 'OPEN'}] {task.get('title', '')} (owner {task.get('owner')}, fix round {task.get('fix_round', 0)})")
+        print(f"  {tid} [{'DONE' if done else 'OPEN'}] {task.get('title', '')} (owner {task.get('owner')}, {task.get('model', 'opus')}/{task.get('effort', 'high')}, fix round {task.get('fix_round', 0)})")
         for p in problems:
             print(f"      - {p}")
 
@@ -389,6 +393,9 @@ def main():
     p = sub.add_parser("task"); p.add_argument("action", choices=["add"]); p.add_argument("id")
     p.add_argument("--title", required=True); p.add_argument("--owner", required=True)
     p.add_argument("--reviews"); p.add_argument("--gates")
+    p.add_argument("--model", default="opus", help="opus | sonnet | codex:<model> - recorded for the audit")
+    p.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
+    p.add_argument("--why", default="", help="required reasoning when downgrading from opus/high")
     p = sub.add_parser("gate"); p.add_argument("id"); p.add_argument("--compile", action="store_true")
     p.add_argument("--playtest", action="store_true"); p.add_argument("--playtest-timeout", type=int, default=900)
     p.add_argument("--viewport"); p.add_argument("--client-shot", action="store_true")

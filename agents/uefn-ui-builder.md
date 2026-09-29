@@ -3,6 +3,8 @@ name: uefn-ui-builder
 description: Gauntlet builder for UEFN UI - UMG Widget Blueprints, layout, Verse fields, MVVM property/event bindings (incl. Param0), widget animations, HUD/popup/shop screens. Use when a gauntlet task owned by uefn-ui-builder needs implementing or fixing. Never reviews work.
 skills:
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: purple
 ---
 

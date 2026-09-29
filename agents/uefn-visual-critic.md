@@ -2,6 +2,8 @@
 name: uefn-visual-critic
 description: Gauntlet visual critic for UEFN - judges UI and level visuals by blind side-by-side comparison against a concrete reference "bar" from the SPEC, picking the better one rather than scoring. Use for tasks with a visual gate. Never implements.
 disallowedTools: Edit, Write, NotebookEdit
+model: claude-opus-5-5
+effort: high
 color: pink
 ---
 

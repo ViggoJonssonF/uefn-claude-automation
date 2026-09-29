@@ -83,7 +83,7 @@ has stray bytes (the desktop app tolerates them, the CLI doesn't) — back it up
 | `skills/uefn-mcp-automation/SKILL.md` | The Claude Code skill: which channel to use for what, the playtest loop, how to write scenarios, building entities/prefabs, MVVM Param0, visual checks, what never to automate. |
 | `skills/uefn-gauntlet/SKILL.md` | Director protocol for the multi-agent gauntlet. |
 | `skills/uefn-blender-assets/SKILL.md` | Blender → centimetre FBX → UEFN import/materials/LODs conventions, with the cost rule. |
-| `agents/uefn-*.md` | The eight subagents: four builders (incl. the Codex-backed asset builder), a test author, three reviewers. |
+| `agents/uefn-*.md` | Ten subagents: four specialist builders (incl. the Codex-backed asset builder), two lower-effort generic builders, a test author, three reviewers. All pinned to Opus 5.5 / high; the director may downgrade builders per task (see the gauntlet skill). |
 | `tools/codex_delegate.py` | Delegate a brief to Codex (`codex exec`) with step/token caps and the asset-approval check. |
 | `tools/gauntlet.py` | Gauntlet state, deterministic gate, verdicts, ledger, editor lock, TaskCompleted hook. |
 | `tools/uefn_playtest.py` | The unattended playtest runner (flag on → compile → session → collect `AUTOTEST:` lines → screenshot → teardown → flag off). |

@@ -4,6 +4,8 @@ description: Gauntlet reviewer that checks a finished UEFN task against its SPEC
 disallowedTools: Edit, Write, NotebookEdit
 skills:
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: orange
 ---
 

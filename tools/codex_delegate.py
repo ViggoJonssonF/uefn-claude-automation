@@ -3,7 +3,7 @@
 Claude stays the director/verifier; Codex does the token-heavy work (e.g. Blender modelling through
 Codex's own Blender + UEFN MCP servers). Everything is logged under the current gauntlet run.
 
-  py -3 codex_delegate.py --task T5 --brief brief.md [--model gpt-6-astra] [--cwd <Content dir>]
+  py -3 codex_delegate.py --task T5 --brief brief.md [--model gpt-6-astra] [--effort high] [--cwd <Content dir>]
         [--asset-job] [--max-tokens 3000000] [--timeout 14400] [--append-skill uefn-blender-assets]
         [--full-access]
 
@@ -77,6 +77,8 @@ def main():
     ap.add_argument("--task", required=True)
     ap.add_argument("--brief", required=True, help="markdown file with the task brief")
     ap.add_argument("--model", default="gpt-6-astra")
+    ap.add_argument("--effort", default="high", choices=["minimal", "low", "medium", "high", "xhigh"],
+                    help="Codex model_reasoning_effort (default high = the user's choice for Blender work)")
     ap.add_argument("--cwd", help="working dir for Codex (default: <project>/Content)")
     ap.add_argument("--root", help="UEFN project root")
     ap.add_argument("--asset-job", action="store_true")
@@ -119,7 +121,7 @@ def main():
         f.write(prompt)
 
     last = os.path.join(out_dir, "last_message.md")
-    cmd = [codex, "exec", "-m", args.model, "--json", "--skip-git-repo-check", "-C", cwd, "-o", last]
+    cmd = [codex, "exec", "-m", args.model, "-c", f'model_reasoning_effort="{args.effort}"', "--json", "--skip-git-repo-check", "-C", cwd, "-o", last]
     if args.full_access:
         cmd.append("--dangerously-bypass-approvals-and-sandbox")
     else:
@@ -167,7 +169,7 @@ def main():
     if time.time() - started >= args.timeout and not killed:
         killed = f"timeout {args.timeout}s"
 
-    usage = {"task": args.task, "model": args.model, "tokens": tokens, "cap": cap, "steps": steps, "max_steps": args.max_steps,
+    usage = {"task": args.task, "model": args.model, "effort": args.effort, "tokens": tokens, "cap": cap, "steps": steps, "max_steps": args.max_steps,
              "seconds": round(time.time() - started), "exit": proc.returncode, "killed": killed}
     gauntlet.write_json(os.path.join(out_dir, "usage.json"), usage)
     print(json.dumps(usage, indent=1))

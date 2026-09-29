@@ -3,6 +3,8 @@ name: uefn-level-builder
 description: Gauntlet builder for UEFN level content - placing and configuring Creative devices, Scene Graph entities and components, prefabs, materials/material instances, lighting, props. Use when a gauntlet task owned by uefn-level-builder needs implementing or fixing. Never reviews work.
 skills:
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: green
 ---
 

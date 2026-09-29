@@ -3,6 +3,8 @@ name: uefn-test-author
 description: Gauntlet test author for UEFN - writes in-game Verse AutoTest scenarios from the SPEC (not from the implementation) so builders never grade their own work. Use when a gauntlet run needs runtime tests for new acceptance criteria.
 skills:
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: yellow
 ---
 

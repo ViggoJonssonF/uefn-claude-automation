@@ -4,6 +4,8 @@ description: Gauntlet adversarial reviewer for UEFN - tries to prove a "done" ta
 disallowedTools: Edit, Write, NotebookEdit
 skills:
   - uefn-mcp-automation
+model: claude-opus-5-5
+effort: high
 color: red
 ---
 

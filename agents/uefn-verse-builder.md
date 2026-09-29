@@ -1,6 +1,8 @@
 ---
 name: uefn-verse-builder
 description: Gauntlet builder for UEFN Verse game logic and Scene Graph components - new systems, managers, components, save data, economy code. Use when a gauntlet task owned by uefn-verse-builder needs implementing or fixing. Never reviews work.
+model: claude-opus-5-5
+effort: high
 color: blue
 ---
 
